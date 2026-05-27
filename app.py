@@ -199,4 +199,15 @@ for i, t in enumerate(st.session_state.tasks):
                 if st.button("Supprimer", key=f"del{i}"):
                     st.session_state.tasks.pop(i)
                     save_tasks(st.session_state.tasks)
-                    st.rerun()
+                    st.from flask import Flask
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Hello, ton app To-do marche !"
+
+if __name__ == "__main__":
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)

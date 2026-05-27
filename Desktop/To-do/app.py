@@ -203,6 +203,8 @@ for i, t in enumerate(st.session_state.tasks):
                     st.session_state.tasks.pop(i)
                     save_tasks(st.session_state.tasks)
                     st.rerun()
+            
+
 
 
 
