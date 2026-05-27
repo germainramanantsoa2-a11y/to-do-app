@@ -13,26 +13,40 @@ DEFAULT_USERS = {
 }
 
 def load_users():
-    if os.path.exists(USERS_FILE):
-        with open(USERS_FILE, "r") as f:
-            return json.load(f)
-    with open(USERS_FILE, "w") as f:
-        json.dump(DEFAULT_USERS, f, indent=2)
-    return DEFAULT_USERS
+    if not os.path.exists(USERS_FILE):
+        with open(USERS_FILE, "w", encoding="utf-8") as f:
+            json.dump(DEFAULT_USERS, f, indent=2, ensure_ascii=False)
+        return DEFAULT_USERS
+
+    try:
+        with open(USERS_FILE, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+            if not content:
+                return DEFAULT_USERS
+            return json.loads(content)
+    except json.JSONDecodeError:
+        return DEFAULT_USERS
 
 def save_users(users):
-    with open(USERS_FILE, "w") as f:
-        json.dump(users, f, indent=2)
+    with open(USERS_FILE, "w", encoding="utf-8") as f:
+        json.dump(users, f, indent=2, ensure_ascii=False)
 
 def load_tasks():
-    if os.path.exists(TASKS_FILE):
-        with open(TASKS_FILE, "r") as f:
-            return json.load(f)
-    return []
+    if not os.path.exists(TASKS_FILE):
+        return []
+
+    try:
+        with open(TASKS_FILE, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+            if not content:
+                return []
+            return json.loads(content)
+    except json.JSONDecodeError:
+        return []
 
 def save_tasks(tasks):
-    with open(TASKS_FILE, "w") as f:
-        json.dump(tasks, f, indent=2)
+    with open(TASKS_FILE, "w", encoding="utf-8") as f:
+        json.dump(tasks, f, indent=2, ensure_ascii=False)
 
 def hash_password(pwd):
     return hashlib.sha256(pwd.encode()).hexdigest()
@@ -41,7 +55,6 @@ def login_page(users):
     st.title("🔐 Connexion")
     username = st.text_input("Utilisateur")
     password = st.text_input("Mot de passe", type="password")
-
     if st.button("Se connecter"):
         if username in users:
             if users[username]["password"] == hash_password(password):
@@ -60,7 +73,6 @@ def change_password(users):
     old_pwd = st.text_input("Ancien mot de passe", type="password", key="old")
     new_pwd = st.text_input("Nouveau mot de passe", type="password", key="new")
     confirm_pwd = st.text_input("Confirmer le mot de passe", type="password", key="confirm")
-
     if st.button("Valider"):
         username = st.session_state.username
         if users[username]["password"]!= hash_password(old_pwd):
@@ -137,7 +149,6 @@ if st.session_state.role == "patron":
             frequency = st.selectbox("Fréquence", ["Jour", "Semaine", "Mois", "Trimestre"])
         with col2:
             period = st.text_input("Période", placeholder="ex: 22/05, Semaine 21, Mai, T2")
-
         submitted = st.form_submit_button("Ajouter")
         if submitted and name:
             new_task = {
@@ -154,25 +165,20 @@ if st.session_state.role == "patron":
             st.rerun()
 
 st.divider()
-
-overdue = sum(1 for t in st.session_state.tasks
-              if not (t["validated_by_me"] and t["validated_by_boss"]))
+overdue = sum(1 for t in st.session_state.tasks if not (t["validated_by_me"] and t["validated_by_boss"]))
 st.metric("Tâches en attente", overdue)
 
 for i, t in enumerate(st.session_state.tasks):
     status, color = get_status(t["validated_by_me"], t["validated_by_boss"])
     next_due = get_next_due_date(t["period"], t["frequency"])
-
     with st.container(border=True):
         col1, col2, col3 = st.columns([3, 2, 1])
-
         with col1:
             st.markdown(f"### {t['name']}")
             batch_info = f" | **Lot:** {t['batch']}" if t['batch'] else ""
             st.write(f"**Fréquence:** {t['frequency']} - {t['period']}{batch_info}")
             st.write(f"**Prochaine échéance:** {next_due}")
             st.caption(f"Dernière maj: {t['cache_date']}")
-
         with col2:
             if st.session_state.role == "personnel":
                 me = st.checkbox("Validé par moi", value=t["validated_by_me"], key=f"me{i}")
@@ -182,7 +188,6 @@ for i, t in enumerate(st.session_state.tasks):
                     st.session_state.tasks[i]["cache_date"] = datetime.now().strftime("%Y-%m-%d %H:%M")
                     save_tasks(st.session_state.tasks)
                     st.rerun()
-
             elif st.session_state.role == "patron":
                 st.checkbox("Validé par moi", value=t["validated_by_me"], key=f"me{i}", disabled=True)
                 boss = st.checkbox("Validé par patron", value=t["validated_by_boss"], key=f"boss{i}")
@@ -191,14 +196,10 @@ for i, t in enumerate(st.session_state.tasks):
                     st.session_state.tasks[i]["cache_date"] = datetime.now().strftime("%Y-%m-%d %H:%M")
                     save_tasks(st.session_state.tasks)
                     st.rerun()
-
-            st.markdown(f"<span style='color:{color}; font-weight:bold;'>● {status}</span>", unsafe_allow_html=True)
-
+        st.markdown(f"<span style='color:{color}; font-weight:bold;'>● {status}</span>", unsafe_allow_html=True)
         with col3:
             if st.session_state.role == "patron":
                 if st.button("Supprimer", key=f"del{i}"):
                     st.session_state.tasks.pop(i)
                     save_tasks(st.session_state.tasks)
-                    st.from flask import Flask
-
-
+                    st.rerun()
